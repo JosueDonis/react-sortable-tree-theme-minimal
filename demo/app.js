@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
-import SortableTree, { toggleExpandedForAll } from 'react-sortable-tree';
+import SortableTree, { toggleExpandedForAll, addNodeUnderParent, removeNodeAtPath, onVisibilityToggle, getNodeKey, changeNodeAtPath, getNodeAtPath } from 'react-sortable-tree';
 import CustomTheme from '../index';
+import AddIcon from '@material-ui/icons/Add';
+import IconButton from '@material-ui/core/IconButton';
+import DeleteIcon from '@material-ui/icons/Delete';
+import Input from '@material-ui/core/Input';
 import './app.css';
 
 class App extends Component {
@@ -12,16 +16,11 @@ class App extends Component {
       searchFocusIndex: 0,
       searchFoundCount: null,
       treeData: [
-        { title: 'This is the Full Node Drag theme' },
-        { title: 'You can click anywhere on the node to drag it' },
-        {
-          title: 'This node has dragging disabled',
-          subtitle: 'Note how the hover behavior is different',
-          dragDisabled: true,
-        },
-        { title: 'Chicken', children: [{ title: 'Egg' }] },
+        { title: 'Sass', children: [{ title: 'Management' }] },
+        { title: 'Alchemy'}
       ],
     };
+    let { treeData } = this.state;
     this.updateTreeData = this.updateTreeData.bind(this);
     this.expandAll = this.expandAll.bind(this);
     this.collapseAll = this.collapseAll.bind(this);
@@ -48,6 +47,12 @@ class App extends Component {
     this.expand(false);
   }
 
+  onVisibility(treeData, node, expand) {
+    onVisibilityToggle({ treeData: treeData, node: node, expand: expand })
+  }
+
+
+
   render() {
     const {
       treeData,
@@ -63,9 +68,9 @@ class App extends Component {
 
       global.alert(
         'Info passed to the icon and button generators:\n\n' +
-          `node: {\n   ${objectString}\n},\n` +
-          `path: [${path.join(', ')}],\n` +
-          `treeIndex: ${treeIndex}`
+        `node: { \n   ${objectString} \n }, \n` +
+        `path: [${path.join(', ')}], \n` +
+        `treeIndex: ${treeIndex} `
       );
     };
 
@@ -85,6 +90,48 @@ class App extends Component {
             : 0,
       });
 
+    const addNode = (data) => {
+      let parentNode = getNodeAtPath({
+        treeData: this.state.treeData,
+        path: data.path,
+        getNodeKey: ({ treeIndex }) => treeIndex,
+        ignoreCollapsed: true
+      });
+      let getNodeKey = ({ node: object, treeIndex: number }) => {
+        return number;
+      };
+      let parentKey = getNodeKey(parentNode);
+      if (parentKey == -1) {
+        parentKey = null;
+      }
+      let newTree = addNodeUnderParent({
+        treeData: this.state.treeData,
+        newNode: { title: '' },
+        expandParent: true,
+        parentKey: parentKey,
+        getNodeKey: ({ treeIndex }) => treeIndex
+      });
+      this.setState(state => ({
+        treeData: newTree.treeData,
+      }));
+      console.log(data);
+    }
+    const deleteNode = (data) => {
+      console.log('delete: ', data);
+      let { node, treeIndex, path } = data;
+      this.setState({
+        treeData: removeNodeAtPath({
+          treeData: this.state.treeData,
+          path: path,   // You can use path from here
+          getNodeKey: ({ node: TreeNode, treeIndex: number }) => {
+            // console.log(number);
+            return number;
+          },
+          ignoreCollapsed: true,
+        })
+      })
+    }
+
     return (
       <div
         style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}
@@ -93,58 +140,16 @@ class App extends Component {
           <h3>Full Node Drag Theme</h3>
           <button onClick={this.expandAll}>Expand All</button>
           <button onClick={this.collapseAll}>Collapse All</button>
-          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-          <form
-            style={{ display: 'inline-block' }}
-            onSubmit={event => {
-              event.preventDefault();
-            }}
-          >
-            <label htmlFor="find-box">
-              Search:&nbsp;
-              <input
-                id="find-box"
-                type="text"
-                value={searchString}
-                onChange={event =>
-                  this.setState({ searchString: event.target.value })
-                }
-              />
-            </label>
-
-            <button
-              type="button"
-              disabled={!searchFoundCount}
-              onClick={selectPrevMatch}
-            >
-              &lt;
-            </button>
-
-            <button
-              type="submit"
-              disabled={!searchFoundCount}
-              onClick={selectNextMatch}
-            >
-              &gt;
-            </button>
-
-            <span>
-              &nbsp;
-              {searchFoundCount > 0 ? searchFocusIndex + 1 : 0}
-              &nbsp;/&nbsp;
-              {searchFoundCount || 0}
-            </span>
-          </form>
         </div>
 
         <div style={{ flex: '1 0 50%', padding: '0 0 0 15px' }}>
           <SortableTree
             theme={CustomTheme}
-            treeData={treeData}
+            treeData={this.state.treeData}
             onChange={this.updateTreeData}
             searchQuery={searchString}
             searchFocusOffset={searchFocusIndex}
-            style={{width: '600px'}}
+            style={{ width: '600px' }}
             rowHeight={45}
             searchFinishCallback={matches =>
               this.setState({
@@ -154,9 +159,50 @@ class App extends Component {
               })
             }
             canDrag={({ node }) => !node.dragDisabled}
-            generateNodeProps={rowInfo => ({
+            generateNodeProps={row => ({
+              title: row.node.needsTitle ? (
+                row.node.title
+              ) : (
+                  <form
+                    onSubmit={event => {
+                      event.preventDefault();
+                      const { needsTitle, ...nodeWithoutNeedsTitle } = row.node;
+                      this.setState(state => ({
+                        treeData: changeNodeAtPath({
+                          treeData: state.treeData,
+                          path: row.path,
+                          getNodeKey: ({ treeIndex }) => treeIndex,
+                          newNode: nodeWithoutNeedsTitle,
+                        }),
+                      }));
+                    }}
+                  >
+                    <Input
+
+                      placeholder="Nueva unidad"
+                      value={row.node.title}
+                      onChange={event => {
+                        const title = event.target.value;
+
+                        this.setState(state => ({
+                          treeData: changeNodeAtPath({
+                            treeData: state.treeData,
+                            path: row.path,
+                            getNodeKey: ({ treeIndex }) => treeIndex,
+                            newNode: { ...row.node, title },
+                          }),
+                        }));
+                      }}
+                    />
+                  </form>
+                ),
               buttons: [
-                <button onClick={() => alertNodeInfo(rowInfo)}>i</button>,
+                <IconButton onClick={() => addNode(row)}>
+                  <AddIcon fontSize="large" />
+                </IconButton>,
+                <IconButton onClick={() => deleteNode(row)}>
+                  <DeleteIcon fontSize="large" />
+                </IconButton>
               ],
             })}
           />

@@ -19,6 +19,12 @@ function isDescendant(older, younger) {
 
 // eslint-disable-next-line react/prefer-stateless-function
 class MinimalThemeNodeContentRenderer extends Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = { text: props.title }
+  }
   render() {
     const {
       scaffoldBlockPxWidth,
@@ -52,9 +58,15 @@ class MinimalThemeNodeContentRenderer extends Component {
     } = this.props;
     const nodeTitle = title || node.title;
     const nodeSubtitle = subtitle || node.subtitle;
-
     const isDraggedDescendant = draggedNode && isDescendant(draggedNode, node);
     const isLandingPadActive = !didDrop && isDragging;
+    this.state = { text: nodeTitle }
+    const { text } = this.state;
+
+    const onChange = (e) => {
+      this.setState({ text: e.target.value })
+      console.log(text);
+    }
     const nodeContent = connectDragPreview(<div
       className={
         styles.rowContents +
@@ -64,19 +76,15 @@ class MinimalThemeNodeContentRenderer extends Component {
       }
     >
       <div className={styles.rowLabel}>
-        {typeof nodeTitle === 'function'
-          ? nodeTitle({
-            node,
-            path,
-            treeIndex,
-          })
-          : <InputBase
-            className={styles.rowTitle +
-              (node.subtitle ? ` ${styles.rowTitleWithSubtitle}` : '')}
-            defaultValue={nodeTitle}
-            value={title}
-            onChange={(e) => { node.title = e.target.value; console.log(node);}}
-          />}
+        <span  className={styles.rowSubtitle}>
+          {typeof nodeTitle === 'function'
+            ? nodeTitle({
+              node,
+              path,
+              treeIndex,
+            })
+            : nodeTitle}
+        </span>
 
         {nodeSubtitle && (
           <span className={styles.rowSubtitle}>
@@ -117,14 +125,14 @@ class MinimalThemeNodeContentRenderer extends Component {
                     path,
                     treeIndex,
                   })
-                } fontSize="large" />
+                } />
               ) : <ExpandMoreIcon className={styles.expandButton} onClick={() =>
                 toggleChildrenVisibility({
                   node,
                   path,
                   treeIndex,
                 })
-              } fontSize="large" />}
+              } />}
               {/* <button
                 type="button"
                 aria-label={node.expanded ? 'Collapse' : 'Expand'}
