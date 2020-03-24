@@ -1,7 +1,12 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import styles from './node-content-renderer.scss';
-
+import AddIcon from '@material-ui/icons/Add';
+import IconButton from '@material-ui/core/IconButton';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import NavigateNextIcon from '@material-ui/icons/NavigateNext';
+import TextField from '@material-ui/core/TextField';
+import InputBase from '@material-ui/core/InputBase';
 function isDescendant(older, younger) {
   return (
     !!older.children &&
@@ -50,54 +55,53 @@ class MinimalThemeNodeContentRenderer extends Component {
 
     const isDraggedDescendant = draggedNode && isDescendant(draggedNode, node);
     const isLandingPadActive = !didDrop && isDragging;
-    const nodeContent = connectDragPreview( <div
-        className={
-          styles.rowContents +
-          (isSearchMatch ? ` ${styles.rowSearchMatch}` : '') +
-          (isSearchFocus ? ` ${styles.rowSearchFocus}` : '') +
-          (!canDrag ? ` ${styles.rowContentsDragDisabled}` : '')
-        }
-      >
-        <div className={styles.rowLabel}>
-          <span
-            className={
-              styles.rowTitle +
-              (node.subtitle ? ` ${styles.rowTitleWithSubtitle}` : '')
-            }
-          >
-            {typeof nodeTitle === 'function'
-              ? nodeTitle({
-                  node,
-                  path,
-                  treeIndex,
-                })
-              : nodeTitle}
+    const nodeContent = connectDragPreview(<div
+      className={
+        styles.rowContents +
+        (isSearchMatch ? ` ${styles.rowSearchMatch}` : '') +
+        (isSearchFocus ? ` ${styles.rowSearchFocus}` : '') +
+        (!canDrag ? ` ${styles.rowContentsDragDisabled}` : '')
+      }
+    >
+      <div className={styles.rowLabel}>
+        {typeof nodeTitle === 'function'
+          ? nodeTitle({
+            node,
+            path,
+            treeIndex,
+          })
+          : <InputBase
+            className={styles.rowTitle +
+              (node.subtitle ? ` ${styles.rowTitleWithSubtitle}` : '')}
+            defaultValue={nodeTitle}
+            value={title}
+            onChange={(e) => { node.title = e.target.value; console.log(node);}}
+          />}
+
+        {nodeSubtitle && (
+          <span className={styles.rowSubtitle}>
+            {typeof nodeSubtitle === 'function'
+              ? nodeSubtitle({
+                node,
+                path,
+                treeIndex,
+              })
+              : nodeSubtitle}
           </span>
-
-          {nodeSubtitle && (
-            <span className={styles.rowSubtitle}>
-              {typeof nodeSubtitle === 'function'
-                ? nodeSubtitle({
-                    node,
-                    path,
-                    treeIndex,
-                  })
-                : nodeSubtitle}
-            </span>
-          )}
-        </div>
-
-        <div className={styles.rowToolbar}>
-          {buttons.map((btn, index) => (
-            <div
-              key={index} // eslint-disable-line react/no-array-index-key
-              className={styles.toolbarButton}
-            >
-              {btn}
-            </div>
-          ))}
-        </div>
+        )}
       </div>
+
+      <div className={styles.rowToolbar}>
+        {buttons.map((btn, index) => (
+          <div
+            key={index} // eslint-disable-line react/no-array-index-key
+            className={styles.toolbarButton}
+          >
+            {btn}
+          </div>
+        ))}
+      </div>
+    </div >
     );
 
     return (
@@ -106,7 +110,22 @@ class MinimalThemeNodeContentRenderer extends Component {
           node.children &&
           (node.children.length > 0 || typeof node.children === 'function') && (
             <div>
-              <button
+              {!node.expanded ? (
+                <NavigateNextIcon className={styles.collapseButton} onClick={() =>
+                  toggleChildrenVisibility({
+                    node,
+                    path,
+                    treeIndex,
+                  })
+                } fontSize="large" />
+              ) : <ExpandMoreIcon className={styles.expandButton} onClick={() =>
+                toggleChildrenVisibility({
+                  node,
+                  path,
+                  treeIndex,
+                })
+              } fontSize="large" />}
+              {/* <button
                 type="button"
                 aria-label={node.expanded ? 'Collapse' : 'Expand'}
                 className={
@@ -119,7 +138,7 @@ class MinimalThemeNodeContentRenderer extends Component {
                     treeIndex,
                   })
                 }
-              />
+              /> */}
 
               {node.expanded &&
                 !isDragging && (
